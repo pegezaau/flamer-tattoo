@@ -256,7 +256,12 @@ function renderLista(){
   div.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
     const i = +b.dataset.del;
     const f = fotos[i];
-    if (!confirm('Excluir "' + f.titulo + '" do site?')) return;
+    if (b.dataset.conf !== '1'){
+      b.dataset.conf = '1';
+      b.textContent = 'Confirmar exclusão?';
+      setStatus('listaStatus', 'Toque em "Confirmar exclusão?" pra apagar "' + f.titulo + '" de vez.', 'info');
+      return;
+    }
     setStatus('listaStatus', 'Excluindo…', 'info');
     try {
       if (f.storagePath) await sbDelete(f.storagePath);
