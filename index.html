@@ -205,6 +205,16 @@ footer{border-top:1px solid var(--linha);padding:34px 0 44px;margin-top:10px}
   <button class="lb-btn lb-prox" id="lbProx" aria-label="Próxima">›</button>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+firebase.initializeApp({
+  apiKey: 'AIzaSyA-4Xiv8qYezOFtvR5Tj5BmspnK3W9a1i0',
+  authDomain: 'flamer-tattoo.firebaseapp.com',
+  projectId: 'flamer-tattoo'
+});
+const db = firebase.firestore();
+</script>
 <script>
 const RESERVA = {"fotos":[
 {"id":"bw-gato","src":"fotos/bw-gato.jpg","cat":"blackwork","titulo":"Gato da sorte","w":690,"h":1130,"visivel":true},
@@ -279,11 +289,23 @@ document.addEventListener('keydown', e => {
   if (e.key === 'ArrowRight') nav(1);
 });
 
-fetch('fotos.json', {cache:'no-store'})
-  .then(r => r.ok ? r.json() : Promise.reject())
-  .then(j => { if (j && Array.isArray(j.fotos) && j.fotos.length) { FOTOS = j.fotos; render(); } })
-  .catch(() => {});
-render();
+async function carregarFotos(){
+  try {
+    const snap = await db.collection('fotos').orderBy('ordem').get();
+    if (!snap.empty) {
+      FOTOS = snap.docs.map(d => { const f = d.data(); return {id: d.id, src: f.url, cat: f.cat, titulo: f.titulo, w: f.w, h: f.h, visivel: f.visivel}; });
+      render();
+      return;
+    }
+  } catch(e){ /* sem banco no momento: usa o arquivo local */ }
+  try {
+    const r = await fetch('fotos.json', {cache:'no-store'});
+    const j = await r.json();
+    if (j && Array.isArray(j.fotos) && j.fotos.length) FOTOS = j.fotos;
+  } catch(e){}
+  render();
+}
+carregarFotos();
 </script>
 </body>
 </html>

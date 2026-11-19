@@ -16,15 +16,13 @@ h1{font-family:'Archivo Black',sans-serif;font-size:22px;text-transform:uppercas
 h2{font-family:'Archivo Black',sans-serif;font-size:16px;text-transform:uppercase;margin-bottom:10px}
 .card{background:var(--grafite);border:1px solid var(--linha);border-radius:18px;padding:20px;margin-top:16px}
 label{font-size:13px;font-weight:600;color:var(--cinza);display:block;margin:12px 0 6px}
-input[type=text],input[type=password],select{width:100%;background:var(--grafite2);border:1px solid var(--linha);border-radius:12px;color:var(--branco);padding:12px;font-size:15px;font-family:'Inter',sans-serif}
+input[type=text],input[type=email],input[type=password],select{width:100%;background:var(--grafite2);border:1px solid var(--linha);border-radius:12px;color:var(--branco);padding:12px;font-size:15px;font-family:'Inter',sans-serif}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border-radius:999px;padding:12px 22px;font-weight:700;font-size:15px;border:1px solid transparent;cursor:pointer;background:linear-gradient(135deg,var(--roxo),var(--roxo-esc));color:#fff;width:100%}
 .btn:disabled{opacity:.45;cursor:not-allowed}
 .btn-linha{background:transparent;border-color:var(--linha);color:var(--branco)}
 .btn-peq{width:auto;padding:8px 13px;font-size:13px;border-radius:10px}
 .status{font-size:14px;margin-top:12px;min-height:20px}
 .status.ok{color:var(--ok)} .status.erro{color:var(--erro)} .status.info{color:var(--cinza)}
-.aviso{border:1px dashed var(--roxo);border-radius:14px;padding:14px;font-size:14px;color:var(--cinza);margin-top:12px}
-.aviso strong{color:var(--branco)}
 #previa{max-width:100%;border-radius:14px;margin-top:12px;display:none}
 .item{display:flex;gap:12px;align-items:center;background:var(--grafite2);border:1px solid var(--linha);border-radius:14px;padding:10px;margin-top:10px}
 .item img{width:58px;height:58px;object-fit:cover;border-radius:10px;flex:none}
@@ -48,7 +46,9 @@ small{color:var(--cinza)}
   <div id="tela-login">
     <div class="topo"><img src="fotos/logo.jpg" alt=""><h1>Painel Flamer Tattoo</h1></div>
     <div class="card">
-      <p style="color:var(--cinza);font-size:14.5px">Área privada do tatuador. Digite a senha de acesso:</p>
+      <p style="color:var(--cinza);font-size:14.5px">Área privada do tatuador. Entre com seu e-mail e senha:</p>
+      <label>E-mail</label>
+      <input type="email" id="email" autocomplete="username" value="painel@flamertattoo.com.br">
       <label>Senha</label>
       <input type="password" id="senha" autocomplete="current-password" placeholder="••••••••">
       <div style="height:14px"></div>
@@ -60,22 +60,7 @@ small{color:var(--cinza)}
   <!-- PAINEL -->
   <div id="tela-painel" hidden>
     <div class="topo"><img src="fotos/logo.jpg" alt=""><h1>Painel Flamer Tattoo</h1></div>
-    <p style="margin-top:8px"><small>Gerencie as fotos do portfólio direto do celular. O que você publicar aparece no site pra todo mundo em cerca de 1 minuto.</small></p>
-
-    <div class="card" id="card-token">
-      <h2>Publicação automática</h2>
-      <div id="token-ok" hidden>
-        <p style="font-size:14.5px">✅ Publicação conectada neste aparelho. Você já pode adicionar e organizar fotos.</p>
-      </div>
-      <div id="token-falta">
-        <div class="aviso"><strong>Configuração pendente (uma única vez):</strong> falta conectar a chave de publicação neste aparelho. Sem ela, o painel só mostra as fotos. Quem monta o site (Pedro) faz essa conexão em 2 minutos — peça pra ele ou cole a chave abaixo, se já tiver uma.</div>
-        <label>Chave de publicação (token do GitHub)</label>
-        <input type="password" id="token" placeholder="github_pat_...">
-        <div style="height:12px"></div>
-        <button class="btn btn-linha" id="salvarToken">Salvar chave neste aparelho</button>
-      </div>
-      <div class="status" id="tokenStatus"></div>
-    </div>
+    <p style="margin-top:8px"><small>Gerencie as fotos do portfólio direto do seu aparelho. O que você publicar aparece no site pra todo mundo na hora.</small></p>
 
     <div class="card">
       <h2>Adicionar foto</h2>
@@ -101,111 +86,107 @@ small{color:var(--cinza)}
       <div class="status" id="listaStatus"></div>
     </div>
 
-    <p style="margin-top:18px;text-align:center"><a href="index.html" style="color:var(--cinza);font-size:14px">← Ver o site público</a></p>
+    <p style="margin-top:18px;text-align:center">
+      <a href="index.html" style="color:var(--cinza);font-size:14px">← Ver o site público</a>
+      &nbsp;·&nbsp;
+      <a href="#" id="sair" style="color:var(--cinza);font-size:14px">Sair</a>
+    </p>
   </div>
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script>
-const CONFIG = {
-  repo: 'pegezaau/flamer-tattoo',
-  branch: 'main',
-  senha: 'flamer123' // senha temporária — trocar após a entrega
-};
+/* ===== configuração (chaves públicas do projeto) ===== */
+firebase.initializeApp({
+  apiKey: 'AIzaSyA-4Xiv8qYezOFtvR5Tj5BmspnK3W9a1i0',
+  authDomain: 'flamer-tattoo.firebaseapp.com',
+  projectId: 'flamer-tattoo'
+});
+const auth = firebase.auth();
+const db = firebase.firestore();
+const SB_URL = 'https://jznxygfhkhzklslxawsh.supabase.co';
+const SB_KEY = 'sb_publishable_l4ID1f-KR37gMGNtSg8rPQ_4c_WJaO5';
 const CATS = {blackwork:'Black Work', minimalist:'Minimalist', delicada:'Delicada'};
-let token = localStorage.getItem('flamer_token') || '';
+const BASE = location.href.replace(/admin\.html.*$/, '');
+const SEED = [
+  {src:'fotos/bw-gato.jpg',cat:'blackwork',titulo:'Gato da sorte',w:690,h:1130},
+  {src:'fotos/bw-dragao.jpg',cat:'blackwork',titulo:'Criatura alada',w:500,h:1215},
+  {src:'fotos/bw-arvore.jpg',cat:'blackwork',titulo:'Árvore com raízes',w:660,h:1155},
+  {src:'fotos/bw-olho.jpg',cat:'blackwork',titulo:'Coração com olho',w:610,h:1100},
+  {src:'fotos/min-chapeu.jpg',cat:'minimalist',titulo:'Chapéu',w:630,h:510},
+  {src:'fotos/min-taca.jpg',cat:'minimalist',titulo:'Taça de vinho',w:450,h:960},
+  {src:'fotos/min-garrafa.jpg',cat:'minimalist',titulo:'Garrafa',w:480,h:730},
+  {src:'fotos/min-amar.jpg',cat:'minimalist',titulo:'Escrita AMAR',w:680,h:450},
+  {src:'fotos/min-letras.jpg',cat:'minimalist',titulo:'Letras',w:680,h:330},
+  {src:'fotos/min-caveira.jpg',cat:'minimalist',titulo:'Caveira com chifres vermelhos',w:610,h:610},
+  {src:'fotos/min-auricelis.jpg',cat:'minimalist',titulo:'Nome com sol',w:118,h:192},
+  {src:'fotos/del-rosa.jpg',cat:'delicada',titulo:'Rosa no pescoço',w:290,h:360},
+  {src:'fotos/del-tudopassa.jpg',cat:'delicada',titulo:'“Tudo passa” com borboleta',w:660,h:490}
+];
 let fotos = [];
-let jsonSha = null;
 let arquivoSel = null;
-
 const $ = id => document.getElementById(id);
-const b64enc = s => btoa(unescape(encodeURIComponent(s)));
-const b64dec = s => decodeURIComponent(escape(atob(s.replace(/\n/g,''))));
+function setStatus(id, txt, cls){ const el = $(id); el.textContent = txt; el.className = 'status ' + cls; }
 
 /* ---------- login ---------- */
-function logado(){ return sessionStorage.getItem('flamer_login') === '1'; }
-function mostrar(){
-  $('tela-login').hidden = logado();
-  $('tela-painel').hidden = !logado();
-  if (logado()){ atualizarTokenUI(); carregar(); }
-}
-$('entrar').addEventListener('click', () => {
-  if ($('senha').value === CONFIG.senha){
-    sessionStorage.setItem('flamer_login','1');
-    $('loginStatus').textContent = '';
-    mostrar();
-  } else {
-    $('loginStatus').textContent = 'Senha incorreta.';
+auth.onAuthStateChanged(async user => {
+  $('tela-login').hidden = !!user;
+  $('tela-painel').hidden = !user;
+  if (user) await carregar();
+});
+$('entrar').addEventListener('click', async () => {
+  $('loginStatus').textContent = '';
+  try {
+    await auth.signInWithEmailAndPassword($('email').value.trim(), $('senha').value);
+  } catch(e) {
+    $('loginStatus').textContent = 'Não consegui entrar. Confira o e-mail e a senha.';
   }
 });
 $('senha').addEventListener('keydown', e => { if (e.key === 'Enter') $('entrar').click(); });
+$('sair').addEventListener('click', async e => { e.preventDefault(); await auth.signOut(); });
 
-/* ---------- GitHub API ---------- */
-function ghHeaders(){
-  return { 'Authorization': 'Bearer ' + token, 'Accept': 'application/vnd.github+json', 'Content-Type': 'application/json' };
+/* ---------- banco de fotos (Supabase Storage) ---------- */
+function sbHeaders(extra){
+  return Object.assign({'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY}, extra || {});
 }
-async function ghGet(path){
-  const r = await fetch('https://api.github.com/repos/' + CONFIG.repo + '/contents/' + path + '?ref=' + CONFIG.branch, {headers: ghHeaders()});
-  if (!r.ok) throw new Error('GitHub ' + r.status);
-  return r.json();
+async function sbUpload(nome, blob){
+  const r = await fetch(SB_URL + '/storage/v1/object/fotos/' + nome, {
+    method: 'POST',
+    headers: sbHeaders({'Content-Type': 'image/jpeg', 'x-upsert': 'false'}),
+    body: blob
+  });
+  if (!r.ok) throw new Error('upload ' + r.status);
+  return SB_URL + '/storage/v1/object/public/fotos/' + nome;
 }
-async function ghPut(path, base64, message, sha){
-  const body = { message, content: base64, branch: CONFIG.branch };
-  if (sha) body.sha = sha;
-  const r = await fetch('https://api.github.com/repos/' + CONFIG.repo + '/contents/' + path, {method:'PUT', headers: ghHeaders(), body: JSON.stringify(body)});
-  if (!r.ok) throw new Error('GitHub ' + r.status);
-  return r.json();
-}
-async function ghDelete(path, sha, message){
-  const r = await fetch('https://api.github.com/repos/' + CONFIG.repo + '/contents/' + path, {method:'DELETE', headers: ghHeaders(), body: JSON.stringify({message, sha, branch: CONFIG.branch})});
-  if (!r.ok) throw new Error('GitHub ' + r.status);
-  return r.json();
-}
-async function salvarJson(msg){
-  const conteudo = b64enc(JSON.stringify({fotos}, null, 1));
-  const res = await ghPut('fotos.json', conteudo, msg, jsonSha);
-  jsonSha = res.content.sha;
+async function sbDelete(nome){
+  await fetch(SB_URL + '/storage/v1/object/fotos', {
+    method: 'DELETE',
+    headers: sbHeaders({'Content-Type': 'application/json'}),
+    body: JSON.stringify({prefixes: [nome]})
+  });
 }
 
-/* ---------- token ---------- */
-function atualizarTokenUI(){
-  $('token-ok').hidden = !token;
-  $('token-falta').hidden = !!token;
-  $('publicar').disabled = !token;
-}
-$('salvarToken').addEventListener('click', async () => {
-  const t = $('token').value.trim();
-  if (!t){ $('tokenStatus').textContent = 'Cole a chave primeiro.'; $('tokenStatus').className = 'status erro'; return; }
-  token = t;
-  $('tokenStatus').textContent = 'Verificando…'; $('tokenStatus').className = 'status info';
-  try {
-    await ghGet('fotos.json');
-    localStorage.setItem('flamer_token', token);
-    $('tokenStatus').textContent = 'Chave aceita e salva neste aparelho ✅';
-    $('tokenStatus').className = 'status ok';
-    atualizarTokenUI(); carregar();
-  } catch(e){
-    token = '';
-    $('tokenStatus').textContent = 'A chave não foi aceita (' + e.message + '). Confira e tente de novo.';
-    $('tokenStatus').className = 'status erro';
-  }
-});
-
-/* ---------- carregar fotos ---------- */
+/* ---------- carregar / semear ---------- */
 async function carregar(){
   try {
-    if (token){
-      const j = await ghGet('fotos.json');
-      jsonSha = j.sha;
-      fotos = JSON.parse(b64dec(j.content)).fotos || [];
-    } else {
-      const r = await fetch('fotos.json', {cache:'no-store'});
-      const j = await r.json();
-      fotos = j.fotos || [];
+    let snap = await db.collection('fotos').orderBy('ordem').get();
+    if (snap.empty){
+      const batch = db.batch();
+      SEED.forEach((f, i) => {
+        batch.set(db.collection('fotos').doc(), {
+          url: BASE + f.src, storagePath: '', cat: f.cat, titulo: f.titulo,
+          w: f.w, h: f.h, visivel: true, ordem: i
+        });
+      });
+      await batch.commit();
+      snap = await db.collection('fotos').orderBy('ordem').get();
     }
+    fotos = snap.docs.map(d => Object.assign({id: d.id}, d.data()));
     renderLista();
   } catch(e){
-    $('listaStatus').textContent = 'Não consegui carregar as fotos (' + e.message + ').';
-    $('listaStatus').className = 'status erro';
+    setStatus('listaStatus', 'Não consegui carregar as fotos (' + e.message + ').', 'erro');
   }
 }
 function renderLista(){
@@ -226,7 +207,7 @@ function renderLista(){
       const el = document.createElement('div');
       el.className = 'item' + (f.visivel === false ? ' oculta' : '');
       el.innerHTML =
-        '<img src="' + f.src + '" alt="">' +
+        '<img src="' + f.url + '" alt="">' +
         '<div class="info"><b>' + f.titulo + '</b>' +
         '<select data-cat="' + i + '">' +
           Object.keys(CATS).map(c => '<option value="' + c + '"' + (c === f.cat ? ' selected' : '') + '>' + CATS[c] + '</option>').join('') +
@@ -243,57 +224,59 @@ function renderLista(){
     });
   });
   div.querySelectorAll('[data-cat]').forEach(s => s.addEventListener('change', async () => {
-    if (!token) return avisarToken();
     const i = +s.dataset.cat;
     fotos[i].cat = s.value;
-    await gravar('Trocar categoria de ' + fotos[i].titulo);
+    await gravar(fotos[i], 'Categoria trocada ✅');
   }));
   div.querySelectorAll('[data-mover]').forEach(b => b.addEventListener('click', async () => {
-    if (!token) return avisarToken();
     const [i, d] = b.dataset.mover.split('|').map(Number);
     const cat = fotos[i].cat;
     const grupo = fotos.map((f,j)=>({f,j})).filter(x => x.f.cat === cat);
     const pos = grupo.findIndex(x => x.j === i);
     const alvo = grupo[pos + d];
     if (!alvo) return;
-    const tmp = fotos[i]; fotos[i] = fotos[alvo.j]; fotos[alvo.j] = tmp;
-    await gravar('Reordenar fotos');
+    const a = fotos[i], c = fotos[alvo.j];
+    const tmp = a.ordem; a.ordem = c.ordem; c.ordem = tmp;
+    setStatus('listaStatus', 'Salvando…', 'info');
+    try {
+      const batch = db.batch();
+      batch.update(db.collection('fotos').doc(a.id), {ordem: a.ordem});
+      batch.update(db.collection('fotos').doc(c.id), {ordem: c.ordem});
+      await batch.commit();
+      fotos.sort((x,y) => x.ordem - y.ordem);
+      renderLista();
+      setStatus('listaStatus', 'Ordem salva ✅', 'ok');
+    } catch(e){ setStatus('listaStatus', 'Erro ao salvar (' + e.message + ').', 'erro'); }
   }));
   div.querySelectorAll('[data-vis]').forEach(b => b.addEventListener('click', async () => {
-    if (!token) return avisarToken();
     const i = +b.dataset.vis;
     fotos[i].visivel = fotos[i].visivel === false ? true : false;
-    await gravar((fotos[i].visivel ? 'Mostrar ' : 'Ocultar ') + fotos[i].titulo);
+    await gravar(fotos[i], fotos[i].visivel ? 'Foto visível no site ✅' : 'Foto oculta do site ✅');
   }));
   div.querySelectorAll('[data-del]').forEach(b => b.addEventListener('click', async () => {
-    if (!token) return avisarToken();
     const i = +b.dataset.del;
-    if (!confirm('Excluir "' + fotos[i].titulo + '" do site?')) return;
     const f = fotos[i];
+    if (!confirm('Excluir "' + f.titulo + '" do site?')) return;
     setStatus('listaStatus', 'Excluindo…', 'info');
     try {
-      const arq = await ghGet(f.src);
-      await ghDelete(f.src, arq.sha, 'Excluir foto ' + f.titulo);
+      if (f.storagePath) await sbDelete(f.storagePath);
+      await db.collection('fotos').doc(f.id).delete();
       fotos.splice(i, 1);
-      await salvarJson('Excluir ' + f.titulo + ' do portfólio');
       renderLista();
-      setStatus('listaStatus', 'Foto excluída ✅ O site atualiza em ~1 min.', 'ok');
+      setStatus('listaStatus', 'Foto excluída ✅', 'ok');
     } catch(e){ setStatus('listaStatus', 'Erro ao excluir (' + e.message + ').', 'erro'); }
   }));
 }
-function avisarToken(){
-  setStatus('listaStatus', 'Conecte a chave de publicação pra fazer alterações.', 'erro');
-  $('card-token').scrollIntoView({behavior:'smooth'});
-}
-async function gravar(msg){
+async function gravar(f, okMsg){
   setStatus('listaStatus', 'Salvando…', 'info');
   try {
-    await salvarJson(msg);
+    const {id, ...dados} = f;
+    await db.collection('fotos').doc(id).update(dados);
+    fotos.sort((x,y) => x.ordem - y.ordem);
     renderLista();
-    setStatus('listaStatus', 'Salvo ✅ O site atualiza em ~1 min.', 'ok');
+    setStatus('listaStatus', okMsg, 'ok');
   } catch(e){ setStatus('listaStatus', 'Erro ao salvar (' + e.message + ').', 'erro'); }
 }
-function setStatus(id, txt, cls){ const el = $(id); el.textContent = txt; el.className = 'status ' + cls; }
 
 /* ---------- adicionar foto ---------- */
 $('arquivo').addEventListener('change', () => {
@@ -308,49 +291,44 @@ function prepararImagem(file){
     const img = new Image();
     img.onload = () => {
       const max = 1200;
-      let {width: w, height: h} = img;
+      let w = img.width, h = img.height;
       const escala = Math.min(1, max / Math.max(w, h));
       w = Math.round(w * escala); h = Math.round(h * escala);
       const c = document.createElement('canvas');
       c.width = w; c.height = h;
       c.getContext('2d').drawImage(img, 0, 0, w, h);
-      c.toBlob(b => {
-        const rd = new FileReader();
-        rd.onload = () => resolve({base64: rd.result.split(',')[1], w, h});
-        rd.onerror = reject;
-        rd.readAsDataURL(b);
-      }, 'image/jpeg', 0.88);
+      c.toBlob(b => resolve({blob: b, w, h}), 'image/jpeg', 0.88);
     };
     img.onerror = reject;
     img.src = URL.createObjectURL(file);
   });
 }
 $('publicar').addEventListener('click', async () => {
-  if (!token) return avisarToken();
   if (!arquivoSel){ setStatus('pubStatus', 'Escolha uma foto primeiro.', 'erro'); return; }
   const btn = $('publicar');
   btn.disabled = true;
   try {
     setStatus('pubStatus', 'Preparando a foto…', 'info');
     const img = await prepararImagem(arquivoSel);
-    const id = 'foto-' + Date.now();
-    const src = 'fotos/' + id + '.jpg';
+    const nome = 'foto-' + Date.now() + '.jpg';
     setStatus('pubStatus', 'Enviando a foto…', 'info');
-    await ghPut(src, img.base64, 'Nova foto do portfólio', null);
+    const url = await sbUpload(nome, img.blob);
     const titulo = $('novoTitulo').value.trim() || 'Nova tattoo';
-    fotos.push({id, src, cat: $('novaCat').value, titulo, w: img.w, h: img.h, visivel: true});
+    const ordem = fotos.length ? Math.max.apply(null, fotos.map(f => f.ordem || 0)) + 1 : 0;
     setStatus('pubStatus', 'Atualizando o site…', 'info');
-    await salvarJson('Publicar ' + titulo);
+    const ref = await db.collection('fotos').add({
+      url, storagePath: nome, cat: $('novaCat').value, titulo,
+      w: img.w, h: img.h, visivel: true, ordem
+    });
+    fotos.push({id: ref.id, url, storagePath: nome, cat: $('novaCat').value, titulo, w: img.w, h: img.h, visivel: true, ordem});
     arquivoSel = null; $('arquivo').value = ''; $('previa').style.display = 'none'; $('novoTitulo').value = '';
     renderLista();
-    setStatus('pubStatus', 'Publicada ✅ Ela aparece no site em ~1 min, na aba escolhida.', 'ok');
+    setStatus('pubStatus', 'Publicada ✅ Já está no site, na aba escolhida.', 'ok');
   } catch(e){
     setStatus('pubStatus', 'Erro ao publicar (' + e.message + '). Tente de novo.', 'erro');
   }
   btn.disabled = false;
 });
-
-mostrar();
 </script>
 </body>
 </html>
